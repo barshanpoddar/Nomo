@@ -1,0 +1,9 @@
+[package]
+name = "namo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+adw = { package = "libadwaita", version = "0.5" }
+gtk = { package = "gtk4", version = "0.7" }
+glib = "0.18"
