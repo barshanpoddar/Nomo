@@ -16,6 +16,7 @@ fn build_ui(app: &adw::Application) {
     sidebar_header.add_css_class("flat");
     sidebar_header.set_show_end_title_buttons(false);
     let app_title = gtk::Label::new(Some("NAMO"));
+    app_title.add_css_class("sidebar-title");
     sidebar_header.set_title_widget(Some(&app_title));
     
     let search_btn = gtk::Button::new();
@@ -34,6 +35,7 @@ fn build_ui(app: &adw::Application) {
     content_header.set_show_start_title_buttons(false);
     
     let content_title = gtk::Label::new(Some("Recent"));
+    content_title.add_css_class("content-title");
     content_header.set_title_widget(Some(&content_title));
 
     let split_toggle = gtk::ToggleButton::new();
@@ -66,7 +68,7 @@ fn build_ui(app: &adw::Application) {
         if is_expanded {
             sidebar.set_min_content_width(220);
         } else {
-            sidebar.set_min_content_width(40);
+            sidebar.set_min_content_width(32);
         }
     }));
 
@@ -78,6 +80,8 @@ fn build_ui(app: &adw::Application) {
     stack.add_named(&ui::options::downloads::build_downloads_view(), Some("downloads"));
     stack.add_named(&ui::options::documents::build_documents_view(), Some("documents"));
     stack.add_named(&ui::options::pictures::build_pictures_view(), Some("pictures"));
+    stack.add_named(&build_file_list("Audio"), Some("audio"));
+    stack.add_named(&build_file_list("Video"), Some("video"));
     stack.add_named(
         &ui::options::drives::build_drives_network_view(),
         Some("drives_network"),
@@ -97,6 +101,8 @@ fn build_ui(app: &adw::Application) {
             3 => ("downloads", "Downloads"),
             4 => ("documents", "Documents"),
             5 => ("pictures", "Pictures"),
+            6 => ("audio", "Audio"),
+            7 => ("video", "Video"),
             _ => ("drives_network", "Drives & Network"),
         };
         stack.set_visible_child_name(name);
@@ -162,7 +168,8 @@ fn load_css() {
         ".flat-list, .flat-list row { background-color: transparent; }\n\
 .flat-list row:selected { background-color: transparent; }\n\
 .content-container { background-color: @view_bg_color; }\n\
-.search-row { background-color: alpha(@accent_bg_color, 0.15); color: @accent_color; border-radius: 6px; }",
+.search-row { background-color: alpha(@accent_bg_color, 0.15); color: @accent_color; border-radius: 6px; }\n\
+.sidebar-title, .content-title { font-weight: bold; }",
     );
 
     if let Some(display) = gtk::gdk::Display::default() {

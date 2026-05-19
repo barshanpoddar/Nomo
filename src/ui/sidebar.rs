@@ -11,8 +11,8 @@ pub fn build_sidebar() -> (gtk::ScrolledWindow, gtk::ListBox, Vec<gtk::Label>, V
     search_row.add_css_class("search-row");
     
     let search_box = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-    search_box.set_margin_start(12);
-    search_box.set_margin_end(12);
+    search_box.set_margin_start(8);
+    search_box.set_margin_end(8);
     search_box.set_margin_top(8);
     search_box.set_margin_bottom(8);
     
@@ -28,6 +28,8 @@ pub fn build_sidebar() -> (gtk::ScrolledWindow, gtk::ListBox, Vec<gtk::Label>, V
         ("Downloads", "folder-download-symbolic"),
         ("Documents", "folder-documents-symbolic"),
         ("Pictures", "folder-pictures-symbolic"),
+        ("Audio", "folder-music-symbolic"),
+        ("Video", "folder-videos-symbolic"),
         ("Drives & Network", "drive-harddisk-symbolic"),
     ];
 
@@ -39,8 +41,8 @@ pub fn build_sidebar() -> (gtk::ScrolledWindow, gtk::ListBox, Vec<gtk::Label>, V
         let row = gtk::ListBoxRow::new();
         
         let box_container = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-        box_container.set_margin_start(12);
-        box_container.set_margin_end(12);
+        box_container.set_margin_start(8);
+        box_container.set_margin_end(8);
         box_container.set_margin_top(8);
         box_container.set_margin_bottom(8);
         
