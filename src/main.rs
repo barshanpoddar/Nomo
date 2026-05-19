@@ -1,6 +1,8 @@
 use adw::prelude::*;
 use glib::clone;
 
+mod ui;
+
 fn main() {
     let app = adw::Application::new(Some("com.namo.FileManager"), Default::default());
 
@@ -9,6 +11,7 @@ fn main() {
 }
 
 fn build_ui(app: &adw::Application) {
+    load_css();
     let header = adw::HeaderBar::new();
     header.set_title_widget(Some(&gtk::Label::new(Some("NAMO"))));
 
@@ -17,8 +20,39 @@ fn build_ui(app: &adw::Application) {
     split_toggle.set_tooltip_text(Some("Toggle split view"));
     header.pack_end(&split_toggle);
 
-    let sidebar = build_sidebar();
-    let primary_pane = build_file_list("Left pane");
+    let (sidebar, sidebar_list) = ui::sidebar::build_sidebar();
+
+    let stack = gtk::Stack::new();
+    stack.set_hexpand(true);
+    stack.set_vexpand(true);
+    stack.add_named(&ui::options::recent::build_recent_list(), Some("recent"));
+    stack.add_named(&ui::options::home::build_home_view(), Some("home"));
+    stack.add_named(&ui::options::downloads::build_downloads_view(), Some("downloads"));
+    stack.add_named(&ui::options::documents::build_documents_view(), Some("documents"));
+    stack.add_named(&ui::options::pictures::build_pictures_view(), Some("pictures"));
+    stack.add_named(&ui::options::drives::build_drives_view(), Some("drives"));
+    stack.add_named(&ui::options::network::build_network_view(), Some("network"));
+    stack.set_visible_child_name("recent");
+
+    if let Some(row) = sidebar_list.row_at_index(0) {
+        sidebar_list.select_row(Some(&row));
+    }
+
+    sidebar_list.connect_row_selected(clone!(@weak stack => move |_list, row| {
+        let Some(row) = row else { return; };
+        let name = match row.index() {
+            0 => "recent",
+            1 => "home",
+            2 => "downloads",
+            3 => "documents",
+            4 => "pictures",
+            5 => "drives",
+            _ => "network",
+        };
+        stack.set_visible_child_name(name);
+    }));
+
+    let primary_pane = stack;
     let secondary_pane = build_file_list("Right pane");
 
     let paned = gtk::Paned::new(gtk::Orientation::Horizontal);
@@ -31,9 +65,17 @@ fn build_ui(app: &adw::Application) {
     }));
     secondary_pane.set_visible(false);
 
+    let content_container = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    content_container.add_css_class("content-container");
+    content_container.set_margin_top(12);
+    content_container.set_margin_end(12);
+    content_container.set_hexpand(true);
+    content_container.set_vexpand(true);
+    content_container.append(&paned);
+
     let content = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     content.append(&sidebar);
-    content.append(&paned);
+    content.append(&content_container);
 
     let status = gtk::Label::new(Some("Ready"));
     status.set_xalign(0.0);
@@ -53,20 +95,21 @@ fn build_ui(app: &adw::Application) {
     window.present();
 }
 
-fn build_sidebar() -> gtk::Widget {
-    let list = gtk::ListBox::new();
-    list.add_css_class("sidebar");
+fn load_css() {
+    let provider = gtk::CssProvider::new();
+    provider.load_from_data(
+        ".flat-list, .flat-list row { background-color: transparent; }\n\
+.flat-list row:selected { background-color: transparent; }\n\
+.content-container { background-color: @view_bg_color; border-radius: 12px; }",
+    );
 
-    for label in ["Home", "Downloads", "Documents", "Pictures", "Drives", "Network"] {
-        let row = gtk::ListBoxRow::new();
-        row.set_child(Some(&gtk::Label::new(Some(label))));
-        list.append(&row);
+    if let Some(display) = gtk::gdk::Display::default() {
+        gtk::style_context_add_provider_for_display(
+            &display,
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
     }
-
-    let scroller = gtk::ScrolledWindow::new();
-    scroller.set_min_content_width(220);
-    scroller.set_child(Some(&list));
-    scroller.upcast()
 }
 
 fn build_file_list(title: &str) -> gtk::Widget {
