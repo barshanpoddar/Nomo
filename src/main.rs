@@ -122,6 +122,14 @@ fn build_ui(app: &adw::Application) {
     content_container.set_vexpand(true);
     content_container.append(&paned);
 
+    let status = gtk::Label::new(Some("Ready"));
+    status.set_xalign(0.0);
+    status.add_css_class("dim-label");
+    status.set_margin_start(12);
+    status.set_margin_bottom(8);
+    status.set_margin_top(8);
+    content_container.append(&status);
+
     let right_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     right_box.set_hexpand(true);
     right_box.set_vexpand(true);
@@ -136,13 +144,8 @@ fn build_ui(app: &adw::Application) {
     
     content.append(&right_box);
 
-    let status = gtk::Label::new(Some("Ready"));
-    status.set_xalign(0.0);
-    status.add_css_class("dim-label");
-
     let main_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     main_box.append(&content);
-    main_box.append(&status);
 
     let window = adw::ApplicationWindow::new(app);
     window.set_default_size(1100, 720);
@@ -158,7 +161,7 @@ fn load_css() {
     provider.load_from_data(
         ".flat-list, .flat-list row { background-color: transparent; }\n\
 .flat-list row:selected { background-color: transparent; }\n\
-.content-container { background-color: @view_bg_color; border-radius: 12px; }\n\
+.content-container { background-color: @view_bg_color; }\n\
 .search-row { background-color: alpha(@accent_bg_color, 0.15); color: @accent_color; border-radius: 6px; }",
     );
 
