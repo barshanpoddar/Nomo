@@ -12,15 +12,37 @@ fn main() {
 
 fn build_ui(app: &adw::Application) {
     load_css();
-    let header = adw::HeaderBar::new();
-    header.set_title_widget(Some(&gtk::Label::new(Some("NAMO"))));
+    let sidebar_header = adw::HeaderBar::new();
+    sidebar_header.add_css_class("flat");
+    sidebar_header.set_show_end_title_buttons(false);
+    sidebar_header.set_title_widget(Some(&gtk::Label::new(Some("NAMO"))));
+    
+    let search_btn = gtk::Button::new();
+    search_btn.set_icon_name("system-search-symbolic");
+    search_btn.add_css_class("flat");
+    sidebar_header.pack_start(&search_btn);
+
+    let menu_btn = gtk::MenuButton::new();
+    menu_btn.set_icon_name("open-menu-symbolic");
+    sidebar_header.pack_end(&menu_btn);
+
+    let content_header = adw::HeaderBar::new();
+    content_header.add_css_class("flat");
+    content_header.set_show_start_title_buttons(false);
+    let content_title = gtk::Label::new(Some("Recent"));
+    content_header.set_title_widget(Some(&content_title));
 
     let split_toggle = gtk::ToggleButton::new();
     split_toggle.set_icon_name("view-split-left-right-symbolic");
     split_toggle.set_tooltip_text(Some("Toggle split view"));
-    header.pack_end(&split_toggle);
+    content_header.pack_end(&split_toggle);
 
     let (sidebar, sidebar_list) = ui::sidebar::build_sidebar();
+    sidebar.set_vexpand(true);
+
+    let sidebar_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    sidebar_box.append(&sidebar_header);
+    sidebar_box.append(&sidebar);
 
     let stack = gtk::Stack::new();
     stack.set_hexpand(true);
@@ -30,26 +52,28 @@ fn build_ui(app: &adw::Application) {
     stack.add_named(&ui::options::downloads::build_downloads_view(), Some("downloads"));
     stack.add_named(&ui::options::documents::build_documents_view(), Some("documents"));
     stack.add_named(&ui::options::pictures::build_pictures_view(), Some("pictures"));
-    stack.add_named(&ui::options::drives::build_drives_view(), Some("drives"));
-    stack.add_named(&ui::options::network::build_network_view(), Some("network"));
+    stack.add_named(
+        &ui::options::drives::build_drives_network_view(),
+        Some("drives_network"),
+    );
     stack.set_visible_child_name("recent");
 
     if let Some(row) = sidebar_list.row_at_index(0) {
         sidebar_list.select_row(Some(&row));
     }
 
-    sidebar_list.connect_row_selected(clone!(@weak stack => move |_list, row| {
+    sidebar_list.connect_row_selected(clone!(@weak stack, @weak content_title => move |_list, row| {
         let Some(row) = row else { return; };
-        let name = match row.index() {
-            0 => "recent",
-            1 => "home",
-            2 => "downloads",
-            3 => "documents",
-            4 => "pictures",
-            5 => "drives",
-            _ => "network",
+        let (name, title) = match row.index() {
+            0 => ("recent", "Recent"),
+            1 => ("home", "Home"),
+            2 => ("downloads", "Downloads"),
+            3 => ("documents", "Documents"),
+            4 => ("pictures", "Pictures"),
+            _ => ("drives_network", "Drives & Network"),
         };
         stack.set_visible_child_name(name);
+        content_title.set_text(title);
     }));
 
     let primary_pane = stack;
@@ -67,15 +91,23 @@ fn build_ui(app: &adw::Application) {
 
     let content_container = gtk::Box::new(gtk::Orientation::Vertical, 0);
     content_container.add_css_class("content-container");
-    content_container.set_margin_top(12);
-    content_container.set_margin_end(12);
     content_container.set_hexpand(true);
     content_container.set_vexpand(true);
     content_container.append(&paned);
 
+    let right_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    right_box.set_hexpand(true);
+    right_box.set_vexpand(true);
+    right_box.append(&content_header);
+    right_box.append(&content_container);
+
     let content = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-    content.append(&sidebar);
-    content.append(&content_container);
+    content.append(&sidebar_box);
+    
+    let separator = gtk::Separator::new(gtk::Orientation::Vertical);
+    content.append(&separator);
+    
+    content.append(&right_box);
 
     let status = gtk::Label::new(Some("Ready"));
     status.set_xalign(0.0);
@@ -89,7 +121,6 @@ fn build_ui(app: &adw::Application) {
     window.set_default_size(1100, 720);
     window.set_title(Some("NAMO"));
     let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
-    root.append(&header);
     root.append(&main_box);
     window.set_content(Some(&root));
     window.present();
@@ -126,9 +157,7 @@ fn build_file_list(title: &str) -> gtk::Widget {
 
     let header_box = gtk::Box::new(gtk::Orientation::Vertical, 6);
     header_box.set_margin_top(12);
-    header_box.set_margin_bottom(12);
     header_box.set_margin_start(12);
-    header_box.set_margin_end(12);
     header_box.append(&header);
 
     let scroller = gtk::ScrolledWindow::new();

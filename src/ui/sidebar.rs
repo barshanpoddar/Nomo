@@ -11,8 +11,7 @@ pub fn build_sidebar() -> (gtk::Widget, gtk::ListBox) {
         ("Downloads", "folder-download-symbolic"),
         ("Documents", "folder-documents-symbolic"),
         ("Pictures", "folder-pictures-symbolic"),
-        ("Drives", "drive-harddisk-symbolic"),
-        ("Network", "network-workgroup-symbolic"),
+        ("Drives & Network", "drive-harddisk-symbolic"),
     ];
 
     for (label, icon_name) in items {
