@@ -11,6 +11,7 @@ fn main() {
 }
 
 fn build_ui(app: &adw::Application) {
+    load_css();
     let header = adw::HeaderBar::new();
     header.set_title_widget(Some(&gtk::Label::new(Some("NAMO"))));
 
@@ -64,9 +65,17 @@ fn build_ui(app: &adw::Application) {
     }));
     secondary_pane.set_visible(false);
 
+    let content_container = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    content_container.add_css_class("content-container");
+    content_container.set_margin_top(12);
+    content_container.set_margin_end(12);
+    content_container.set_hexpand(true);
+    content_container.set_vexpand(true);
+    content_container.append(&paned);
+
     let content = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     content.append(&sidebar);
-    content.append(&paned);
+    content.append(&content_container);
 
     let status = gtk::Label::new(Some("Ready"));
     status.set_xalign(0.0);
@@ -84,6 +93,23 @@ fn build_ui(app: &adw::Application) {
     root.append(&main_box);
     window.set_content(Some(&root));
     window.present();
+}
+
+fn load_css() {
+    let provider = gtk::CssProvider::new();
+    provider.load_from_data(
+        ".flat-list, .flat-list row { background-color: transparent; }\n\
+.flat-list row:selected { background-color: transparent; }\n\
+.content-container { background-color: @view_bg_color; border-radius: 12px; }",
+    );
+
+    if let Some(display) = gtk::gdk::Display::default() {
+        gtk::style_context_add_provider_for_display(
+            &display,
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
 }
 
 fn build_file_list(title: &str) -> gtk::Widget {

@@ -1,17 +1,6 @@
 use gtk::prelude::*;
 
 pub fn build_recent_list() -> gtk::Widget {
-    let header = gtk::Label::new(Some("Recent"));
-    header.add_css_class("heading");
-    header.set_xalign(0.0);
-
-    let header_box = gtk::Box::new(gtk::Orientation::Vertical, 6);
-    header_box.set_margin_top(12);
-    header_box.set_margin_bottom(6);
-    header_box.set_margin_start(12);
-    header_box.set_margin_end(12);
-    header_box.append(&header);
-
     let starred = ["Brand Assets", "Invoices", "Roadmap.md", "Design.sketch"];
     let recents = ["Projects", "Notes.txt", "Screenshot.png", "Report.pdf"];
 
@@ -27,7 +16,6 @@ pub fn build_recent_list() -> gtk::Widget {
     let container = gtk::Box::new(gtk::Orientation::Vertical, 0);
     container.set_hexpand(true);
     container.set_vexpand(true);
-    container.append(&header_box);
     container.append(&scroller);
     container.upcast()
 }
@@ -38,6 +26,7 @@ fn build_section(title: &str, items: &[&str]) -> gtk::Widget {
     label.set_xalign(0.0);
 
     let list = gtk::ListBox::new();
+    list.add_css_class("flat-list");
     for item in items {
         let text = gtk::Label::new(Some(item));
         text.set_xalign(0.0);
