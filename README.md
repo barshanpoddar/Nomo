@@ -1,5 +1,11 @@
 # NAMO :wave:
 
+![status](https://img.shields.io/badge/status-early%20beta-orange)
+![latest](https://img.shields.io/badge/latest-v0.1.0-blue)
+![stars](https://img.shields.io/badge/stars-0-lightgrey)
+![license](https://img.shields.io/badge/license-GPL--3.0-green)
+![lang](https://img.shields.io/badge/lang-English-lightblue)
+
 NAMO is a cross-distro Linux file manager that blends the familiarity of Ubuntu Files with the productivity of Windows Explorer. The name comes from a Hindi word meaning “namaste.”
 
 ## Goals :dart:
