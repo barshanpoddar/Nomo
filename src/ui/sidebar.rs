@@ -1,6 +1,6 @@
 use gtk::prelude::*;
 
-pub fn build_sidebar() -> (gtk::Widget, gtk::ListBox) {
+pub fn build_sidebar() -> (gtk::ScrolledWindow, gtk::ListBox, Vec<gtk::Label>, Vec<gtk::Box>) {
     let list = gtk::ListBox::new();
     list.add_css_class("navigation-sidebar");
     list.set_selection_mode(gtk::SelectionMode::Single);
@@ -13,6 +13,9 @@ pub fn build_sidebar() -> (gtk::Widget, gtk::ListBox) {
         ("Pictures", "folder-pictures-symbolic"),
         ("Drives & Network", "drive-harddisk-symbolic"),
     ];
+
+    let mut labels = Vec::new();
+    let mut containers = Vec::new();
 
     for (label, icon_name) in items {
         let row = gtk::ListBoxRow::new();
@@ -29,6 +32,8 @@ pub fn build_sidebar() -> (gtk::Widget, gtk::ListBox) {
         
         let label_widget = gtk::Label::new(Some(label));
         label_widget.set_xalign(0.0);
+        labels.push(label_widget.clone());
+        containers.push(box_container.clone());
         
         box_container.append(&icon);
         box_container.append(&label_widget);
@@ -41,5 +46,5 @@ pub fn build_sidebar() -> (gtk::Widget, gtk::ListBox) {
     scroller.add_css_class("sidebar-area");
     scroller.set_min_content_width(220);
     scroller.set_child(Some(&list));
-    (scroller.upcast(), list)
+    (scroller, list, labels, containers)
 }

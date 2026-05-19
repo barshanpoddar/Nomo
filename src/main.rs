@@ -15,20 +15,24 @@ fn build_ui(app: &adw::Application) {
     let sidebar_header = adw::HeaderBar::new();
     sidebar_header.add_css_class("flat");
     sidebar_header.set_show_end_title_buttons(false);
-    sidebar_header.set_title_widget(Some(&gtk::Label::new(Some("NAMO"))));
+    let app_title = gtk::Label::new(Some("NAMO"));
+    sidebar_header.set_title_widget(Some(&app_title));
     
     let search_btn = gtk::Button::new();
     search_btn.set_icon_name("system-search-symbolic");
     search_btn.add_css_class("flat");
     sidebar_header.pack_start(&search_btn);
 
-    let menu_btn = gtk::MenuButton::new();
-    menu_btn.set_icon_name("open-menu-symbolic");
+    let menu_btn = gtk::ToggleButton::new();
+    menu_btn.set_icon_name("sidebar-show-symbolic");
+    menu_btn.set_active(true);
+    menu_btn.set_tooltip_text(Some("Toggle sidebar"));
     sidebar_header.pack_end(&menu_btn);
 
     let content_header = adw::HeaderBar::new();
     content_header.add_css_class("flat");
     content_header.set_show_start_title_buttons(false);
+    
     let content_title = gtk::Label::new(Some("Recent"));
     content_header.set_title_widget(Some(&content_title));
 
@@ -37,12 +41,33 @@ fn build_ui(app: &adw::Application) {
     split_toggle.set_tooltip_text(Some("Toggle split view"));
     content_header.pack_end(&split_toggle);
 
-    let (sidebar, sidebar_list) = ui::sidebar::build_sidebar();
+    let (sidebar, sidebar_list, sidebar_labels, sidebar_containers) = ui::sidebar::build_sidebar();
     sidebar.set_vexpand(true);
 
     let sidebar_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     sidebar_box.append(&sidebar_header);
     sidebar_box.append(&sidebar);
+
+    menu_btn.connect_toggled(clone!(@weak sidebar, @weak app_title, @weak search_btn => move |btn| {
+        let is_expanded = btn.is_active();
+        app_title.set_visible(is_expanded);
+        search_btn.set_visible(is_expanded);
+        for label in &sidebar_labels {
+            label.set_visible(is_expanded);
+        }
+        for container in &sidebar_containers {
+            if is_expanded {
+                container.set_halign(gtk::Align::Fill);
+            } else {
+                container.set_halign(gtk::Align::Center);
+            }
+        }
+        if is_expanded {
+            sidebar.set_min_content_width(220);
+        } else {
+            sidebar.set_min_content_width(40);
+        }
+    }));
 
     let stack = gtk::Stack::new();
     stack.set_hexpand(true);
