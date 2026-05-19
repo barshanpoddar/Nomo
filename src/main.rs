@@ -21,13 +21,13 @@ fn build_ui(app: &adw::Application) {
     let search_btn = gtk::Button::new();
     search_btn.set_icon_name("system-search-symbolic");
     search_btn.add_css_class("flat");
-    sidebar_header.pack_start(&search_btn);
+    sidebar_header.pack_end(&search_btn);
 
     let menu_btn = gtk::ToggleButton::new();
     menu_btn.set_icon_name("sidebar-show-symbolic");
     menu_btn.set_active(true);
     menu_btn.set_tooltip_text(Some("Toggle sidebar"));
-    sidebar_header.pack_end(&menu_btn);
+    sidebar_header.pack_start(&menu_btn);
 
     let content_header = adw::HeaderBar::new();
     content_header.add_css_class("flat");
@@ -41,17 +41,18 @@ fn build_ui(app: &adw::Application) {
     split_toggle.set_tooltip_text(Some("Toggle split view"));
     content_header.pack_end(&split_toggle);
 
-    let (sidebar, sidebar_list, sidebar_labels, sidebar_containers) = ui::sidebar::build_sidebar();
+    let (sidebar, sidebar_list, sidebar_labels, sidebar_containers, search_row) = ui::sidebar::build_sidebar();
     sidebar.set_vexpand(true);
 
     let sidebar_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     sidebar_box.append(&sidebar_header);
     sidebar_box.append(&sidebar);
 
-    menu_btn.connect_toggled(clone!(@weak sidebar, @weak app_title, @weak search_btn => move |btn| {
+    menu_btn.connect_toggled(clone!(@weak sidebar, @weak app_title, @weak search_btn, @weak search_row => move |btn| {
         let is_expanded = btn.is_active();
         app_title.set_visible(is_expanded);
         search_btn.set_visible(is_expanded);
+        search_row.set_visible(!is_expanded);
         for label in &sidebar_labels {
             label.set_visible(is_expanded);
         }
@@ -83,18 +84,19 @@ fn build_ui(app: &adw::Application) {
     );
     stack.set_visible_child_name("recent");
 
-    if let Some(row) = sidebar_list.row_at_index(0) {
+    if let Some(row) = sidebar_list.row_at_index(1) {
         sidebar_list.select_row(Some(&row));
     }
 
     sidebar_list.connect_row_selected(clone!(@weak stack, @weak content_title => move |_list, row| {
         let Some(row) = row else { return; };
         let (name, title) = match row.index() {
-            0 => ("recent", "Recent"),
-            1 => ("home", "Home"),
-            2 => ("downloads", "Downloads"),
-            3 => ("documents", "Documents"),
-            4 => ("pictures", "Pictures"),
+            0 => return, // Search row
+            1 => ("recent", "Recent"),
+            2 => ("home", "Home"),
+            3 => ("downloads", "Downloads"),
+            4 => ("documents", "Documents"),
+            5 => ("pictures", "Pictures"),
             _ => ("drives_network", "Drives & Network"),
         };
         stack.set_visible_child_name(name);
@@ -156,7 +158,8 @@ fn load_css() {
     provider.load_from_data(
         ".flat-list, .flat-list row { background-color: transparent; }\n\
 .flat-list row:selected { background-color: transparent; }\n\
-.content-container { background-color: @view_bg_color; border-radius: 12px; }",
+.content-container { background-color: @view_bg_color; border-radius: 12px; }\n\
+.search-row { background-color: alpha(@accent_bg_color, 0.15); color: @accent_color; border-radius: 6px; }",
     );
 
     if let Some(display) = gtk::gdk::Display::default() {
