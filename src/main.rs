@@ -1,6 +1,8 @@
 use adw::prelude::*;
 use glib::clone;
 
+mod ui;
+
 fn main() {
     let app = adw::Application::new(Some("com.namo.FileManager"), Default::default());
 
@@ -17,8 +19,39 @@ fn build_ui(app: &adw::Application) {
     split_toggle.set_tooltip_text(Some("Toggle split view"));
     header.pack_end(&split_toggle);
 
-    let sidebar = build_sidebar();
-    let primary_pane = build_file_list("Left pane");
+    let (sidebar, sidebar_list) = ui::sidebar::build_sidebar();
+
+    let stack = gtk::Stack::new();
+    stack.set_hexpand(true);
+    stack.set_vexpand(true);
+    stack.add_named(&ui::options::recent::build_recent_list(), Some("recent"));
+    stack.add_named(&ui::options::home::build_home_view(), Some("home"));
+    stack.add_named(&ui::options::downloads::build_downloads_view(), Some("downloads"));
+    stack.add_named(&ui::options::documents::build_documents_view(), Some("documents"));
+    stack.add_named(&ui::options::pictures::build_pictures_view(), Some("pictures"));
+    stack.add_named(&ui::options::drives::build_drives_view(), Some("drives"));
+    stack.add_named(&ui::options::network::build_network_view(), Some("network"));
+    stack.set_visible_child_name("recent");
+
+    if let Some(row) = sidebar_list.row_at_index(0) {
+        sidebar_list.select_row(Some(&row));
+    }
+
+    sidebar_list.connect_row_selected(clone!(@weak stack => move |_list, row| {
+        let Some(row) = row else { return; };
+        let name = match row.index() {
+            0 => "recent",
+            1 => "home",
+            2 => "downloads",
+            3 => "documents",
+            4 => "pictures",
+            5 => "drives",
+            _ => "network",
+        };
+        stack.set_visible_child_name(name);
+    }));
+
+    let primary_pane = stack;
     let secondary_pane = build_file_list("Right pane");
 
     let paned = gtk::Paned::new(gtk::Orientation::Horizontal);
@@ -51,22 +84,6 @@ fn build_ui(app: &adw::Application) {
     root.append(&main_box);
     window.set_content(Some(&root));
     window.present();
-}
-
-fn build_sidebar() -> gtk::Widget {
-    let list = gtk::ListBox::new();
-    list.add_css_class("sidebar");
-
-    for label in ["Home", "Downloads", "Documents", "Pictures", "Drives", "Network"] {
-        let row = gtk::ListBoxRow::new();
-        row.set_child(Some(&gtk::Label::new(Some(label))));
-        list.append(&row);
-    }
-
-    let scroller = gtk::ScrolledWindow::new();
-    scroller.set_min_content_width(220);
-    scroller.set_child(Some(&list));
-    scroller.upcast()
 }
 
 fn build_file_list(title: &str) -> gtk::Widget {
