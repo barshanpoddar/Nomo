@@ -17,8 +17,8 @@ pub fn build_drives_network_view() -> gtk::Widget {
     content.set_margin_bottom(12);
     content.set_margin_start(12);
     content.set_margin_end(12);
-    content.append(&build_section("Drives", &["System", "Backup", "Shared"]));
-    content.append(&build_section("Network", &["Office NAS", "Team Share", "Remote"]));
+    content.append(&build_section("Drives", &["System", "Backup"]));
+    content.append(&build_section("Network", &["Office NAS", "Team Share"]));
 
     let scroller = gtk::ScrolledWindow::new();
     scroller.set_vexpand(true);
