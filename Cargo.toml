@@ -7,3 +7,4 @@ edition = "2021"
 adw = { package = "libadwaita", version = "0.5" }
 gtk = { package = "gtk4", version = "0.7" }
 glib = "0.18"
+open = "5"
