@@ -42,7 +42,8 @@ fn section_info(idx: i32) -> (&'static str, &'static str) {
         5 => ("Pictures", "folder-pictures-symbolic"),
         6 => ("Audio", "folder-music-symbolic"),
         7 => ("Video", "folder-videos-symbolic"),
-        _ => ("Drives & Network", "drive-harddisk-symbolic"),
+        9 => ("Drives & Network", "drive-harddisk-symbolic"),
+        _ => ("", ""),
     }
 }
 
@@ -55,7 +56,6 @@ fn refresh_view(
     forward_btn: &gtk::Button,
     path_bar_label: &gtk::Label,
     path_bar_icon: &gtk::Image,
-    status_label: &gtk::Label,
 ) {
     // Remove old content
     while let Some(child) = content_host.first_child() {
@@ -80,33 +80,23 @@ fn refresh_view(
     let icon = path_icon_name(&path);
     path_bar_icon.set_icon_name(Some(icon));
 
-    // Status bar
-    if let Ok(entries) = std::fs::read_dir(&path) {
-        let count = entries.count();
-        status_label.set_text(&format!("{} items", count));
-    } else {
-        status_label.set_text("");
-    }
-
     // Build file view - note we must clone refs for the callback
     let content_host_weak = content_host.downgrade();
     let back_btn_weak = back_btn.downgrade();
     let forward_btn_weak = forward_btn.downgrade();
     let path_bar_label_weak = path_bar_label.downgrade();
     let path_bar_icon_weak = path_bar_icon.downgrade();
-    let status_weak = status_label.downgrade();
     let nav_clone = nav.clone();
 
     let on_navigate = move || {
-        if let (Some(ch), Some(bb), Some(fb), Some(pbl), Some(pbi), Some(sl)) = (
+        if let (Some(ch), Some(bb), Some(fb), Some(pbl), Some(pbi)) = (
             content_host_weak.upgrade(),
             back_btn_weak.upgrade(),
             forward_btn_weak.upgrade(),
             path_bar_label_weak.upgrade(),
             path_bar_icon_weak.upgrade(),
-            status_weak.upgrade(),
         ) {
-            refresh_view(&ch, &nav_clone, &bb, &fb, &pbl, &pbi, &sl);
+            refresh_view(&ch, &nav_clone, &bb, &fb, &pbl, &pbi);
         }
     };
 
@@ -247,11 +237,6 @@ fn build_ui(app: &adw::Application) {
     content_host.set_hexpand(true);
     content_host.set_vexpand(true);
 
-    let status_label = gtk::Label::new(Some("Ready"));
-    status_label.set_xalign(0.0);
-    status_label.add_css_class("dim-label");
-    status_label.set_margin_start(12);
-
     // Drives panel (separate non-navigator view)
     let drives_panel = ui::options::drives::build_drives_network_view();
 
@@ -292,7 +277,7 @@ fn build_ui(app: &adw::Application) {
     // ── View toggle (grid ↔ list) ─────────────────────────────────────
     view_toggle.connect_toggled(clone!(
         @weak content_host, @weak back_btn, @weak forward_btn,
-        @weak path_bar_label, @weak path_bar_icon, @weak status_label,
+        @weak path_bar_label, @weak path_bar_icon,
         @strong nav => move |btn| {
             nav.borrow_mut().toggle_view_mode();
             btn.set_icon_name(if btn.is_active() {
@@ -301,32 +286,32 @@ fn build_ui(app: &adw::Application) {
                 "view-grid-symbolic"
             });
             refresh_view(&content_host, &nav, &back_btn, &forward_btn,
-                &path_bar_label, &path_bar_icon, &status_label);
+                &path_bar_label, &path_bar_icon);
     }));
 
     // ── Back button ───────────────────────────────────────────────────
     back_btn.connect_clicked(clone!(
         @weak content_host, @weak back_btn, @weak forward_btn,
-        @weak path_bar_label, @weak path_bar_icon, @weak status_label, @weak stack,
+        @weak path_bar_label, @weak path_bar_icon, @weak stack,
         @strong nav => move |_| {
             let went = nav.borrow_mut().go_back();
             if went {
                 stack.set_visible_child_name("files");
                 refresh_view(&content_host, &nav, &back_btn, &forward_btn,
-                    &path_bar_label, &path_bar_icon, &status_label);
+                    &path_bar_label, &path_bar_icon);
             }
     }));
 
     // ── Forward button ────────────────────────────────────────────────
     forward_btn.connect_clicked(clone!(
         @weak content_host, @weak back_btn, @weak forward_btn,
-        @weak path_bar_label, @weak path_bar_icon, @weak status_label, @weak stack,
+        @weak path_bar_label, @weak path_bar_icon, @weak stack,
         @strong nav => move |_| {
             let went = nav.borrow_mut().go_forward();
             if went {
                 stack.set_visible_child_name("files");
                 refresh_view(&content_host, &nav, &back_btn, &forward_btn,
-                    &path_bar_label, &path_bar_icon, &status_label);
+                    &path_bar_label, &path_bar_icon);
             }
     }));
 
@@ -334,12 +319,12 @@ fn build_ui(app: &adw::Application) {
     refresh_btn.connect_clicked(clone!(
         @weak refresh_spinner, @weak refresh_stack,
         @weak content_host, @weak back_btn, @weak forward_btn,
-        @weak path_bar_label, @weak path_bar_icon, @weak status_label,
+        @weak path_bar_label, @weak path_bar_icon,
         @strong nav => move |_| {
             refresh_spinner.start();
             refresh_stack.set_visible_child_name("spinner");
             refresh_view(&content_host, &nav, &back_btn, &forward_btn,
-                &path_bar_label, &path_bar_icon, &status_label);
+                &path_bar_label, &path_bar_icon);
             timeout_add_local_once(Duration::from_millis(350), clone!(@weak refresh_spinner, @weak refresh_stack => move || {
                 refresh_spinner.stop();
                 refresh_stack.set_visible_child_name("icon");
@@ -353,11 +338,11 @@ fn build_ui(app: &adw::Application) {
 
     sidebar_list.connect_row_selected(clone!(
         @weak stack, @weak content_host, @weak back_btn, @weak forward_btn,
-        @weak path_bar_label, @weak path_bar_icon, @weak status_label,
+        @weak path_bar_label, @weak path_bar_icon,
         @strong nav => move |_, row| {
             let Some(row) = row else { return; };
             let idx = row.index();
-            if idx == 0 { return; }
+            if idx == 0 || idx == 8 { return; }
 
             let (title, icon) = section_info(idx);
 
@@ -370,7 +355,7 @@ fn build_ui(app: &adw::Application) {
                     forward_btn.set_sensitive(nav.borrow().can_go_forward());
                     stack.set_visible_child_name("recent");
                 }
-                8 => {
+                9 => {
                     // Drives & Network — special static view
                     path_bar_label.set_text(title);
                     path_bar_icon.set_icon_name(Some(icon));
@@ -384,7 +369,7 @@ fn build_ui(app: &adw::Application) {
                         nav.borrow_mut().navigate_to(root);
                         stack.set_visible_child_name("files");
                         refresh_view(&content_host, &nav, &back_btn, &forward_btn,
-                            &path_bar_label, &path_bar_icon, &status_label);
+                            &path_bar_label, &path_bar_icon);
                     }
                 }
             }
@@ -397,21 +382,11 @@ fn build_ui(app: &adw::Application) {
     content_container.set_vexpand(true);
     content_container.append(&stack);
 
-    let status_bar = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-    status_bar.add_css_class("status-bar");
-    status_bar.set_margin_start(12);
-    status_bar.set_margin_end(12);
-    status_bar.set_margin_top(4);
-    status_bar.set_margin_bottom(4);
-    status_bar.append(&status_label);
-
     let right_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     right_box.set_hexpand(true);
     right_box.set_vexpand(true);
     right_box.append(&content_header);
     right_box.append(&content_container);
-    right_box.append(&gtk::Separator::new(gtk::Orientation::Horizontal));
-    right_box.append(&status_bar);
 
     let main_content = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     main_content.append(&sidebar_box);
@@ -438,6 +413,9 @@ fn load_css() {
 .content-container { background-color: @view_bg_color; }\n\
 /* Search row */\n\
 .search-row { background-color: alpha(@accent_bg_color, 0.15); color: @accent_color; border-radius: 6px; }\n\
+    /* Sidebar divider */\n\
+         .sidebar-divider { opacity: 0.45; }\n\
+            .sidebar-divider-row { padding: 0; min-height: 2px; }\n\
 /* Path bar */\n\
 .path-bar-pill { background-color: alpha(@window_fg_color, 0.06); border: 1px solid alpha(@window_fg_color, 0.08); border-radius: 8px; padding: 4px 12px; }\n\
 .path-bar-text { font-weight: 600; }\n\

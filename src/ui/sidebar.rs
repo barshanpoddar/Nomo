@@ -38,6 +38,22 @@ pub fn build_sidebar() -> (gtk::ScrolledWindow, gtk::ListBox, Vec<gtk::Label>, V
     containers.push(search_box); // Add to containers so it gets centered
 
     for (label, icon_name) in items {
+        if label == "Drives & Network" {
+            let sep_row = gtk::ListBoxRow::new();
+            sep_row.set_selectable(false);
+            sep_row.set_activatable(false);
+            sep_row.set_focusable(false);
+            sep_row.add_css_class("sidebar-divider-row");
+
+            let sep = gtk::Separator::new(gtk::Orientation::Horizontal);
+            sep.add_css_class("sidebar-divider");
+            sep.set_margin_start(12);
+            sep.set_margin_end(12);
+
+            sep_row.set_child(Some(&sep));
+            list.append(&sep_row);
+        }
+
         let row = gtk::ListBoxRow::new();
         
         let box_container = gtk::Box::new(gtk::Orientation::Horizontal, 12);
